@@ -4,17 +4,16 @@
 <meta charset="UTF-8">
 <title>What a website can see about you</title>
 
-<!-- tiny 1×1 transparent favicon – removes the 404 warning -->
 <link rel="icon"
       href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/5+BAQAE/wMn2TLrJQAAAABJRU5ErkJggg==">
 
 <style>
   body{
     font-family:system-ui,Arial,sans-serif;
-    margin:40px auto 20px auto;     /* start a bit below the top */
+    margin:40px auto 20px auto;   /* start a bit below the top */
     max-width:960px;
     line-height:1.4;
-    font-size:10px;                /* very small – many rows fit on one screen */
+    font-size:10px;               /* tiny, many rows on one screen */
     color:#111;
   }
   h1{
@@ -62,12 +61,13 @@
   <tbody></tbody>
 </table>
 
-<p class="credit">Created by <strong>animation.appentialicence.po</strong></p>
+<p class="credit">
+  Created by <strong>Animesh</strong>. 
+  <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener">Apache License 2.0</a>.
+</p>
 
 <script>
-/* -------------------------------------------------------------
-   Helper – get public IP (primary + fallback)
-   ------------------------------------------------------------- */
+/* ---------- Helpers --------------------------------------------------- */
 async function getPublicIP(){
   const services = [
     'https://api.ipify.org?format=json',
@@ -88,9 +88,6 @@ async function getPublicIP(){
   return 'unavailable';
 }
 
-/* -------------------------------------------------------------
-   Helper – WebGL fingerprint (vendor / renderer)
-   ------------------------------------------------------------- */
 function getWebGL(){
   try{
     const c=document.createElement('canvas');
@@ -105,9 +102,7 @@ function getWebGL(){
   }
 }
 
-/* -------------------------------------------------------------
-   Helper – Canvas fingerprint (simple hash of toDataURL)
-   ------------------------------------------------------------- */
+/* A very small canvas‑hash – just to show another fingerprint vector */
 function getCanvasHash(){
   try{
     const c=document.createElement('canvas');
@@ -118,30 +113,32 @@ function getCanvasHash(){
     ctx.fillRect(125,1,62,20);
     ctx.fillStyle='#069';
     ctx.fillText('CanvasFingerprint',2,15);
-    const data = c.toDataURL();
-    // simple 8‑char hash – enough for demonstration
+    const data=c.toDataURL();
     let hash=0;
-    for(let i=0;i<data.length;i++)hash = ((hash<<5)-hash)+data.charCodeAt(i);
+    for(let i=0;i<data.length;i++) hash = ((hash<<5)-hash)+data.charCodeAt(i);
     return ('00000000'+(hash>>>0).toString(16)).slice(-8);
   }catch(e){
     return `error (${e.message})`;
   }
 }
 
-/* -------------------------------------------------------------
-   Gather everything we can read without extra permissions
-   ------------------------------------------------------------- */
+/* ---------- Main data collector ------------------------------------- */
 async function collectData(){
   const now = new Date();
 
   const out = {
-    // -----------------------------------------------------------------
-    // Browser basics
-    // -----------------------------------------------------------------
+    // ---- Browser basics -------------------------------------------------
     'User‑Agent':{
       value:navigator.userAgent,
       why:'Exact browser, version and OS – lets a site serve targeted exploits.',
       fix:'Keep the browser updated; use a privacy‑focused browser or an extension that spoofs/truncates the UA string.'
+    },
+    'User‑Agent Client Hints':{
+      value:(navigator.userAgentData && navigator.userAgentData.brands
+              ? navigator.userAgentData.brands.map(b=>b.brand+' '+b.version).join(', ')
+              : 'not supported'),
+      why:'Structured UA data that browsers expose to aid feature detection; can be combined for fingerprinting.',
+      fix:'Prefer browsers that hide or randomise client‑hint values (e.g., Tor, Brave with strict settings).'
     },
     Platform:{
       value:navigator.platform,
@@ -169,9 +166,7 @@ async function collectData(){
       fix:'Enable Do‑Not‑Track and use an extension that actively blocks known trackers.'
     },
 
-    // -----------------------------------------------------------------
-    // Screen / display
-    // -----------------------------------------------------------------
+    // ---- Screen / display -----------------------------------------------
     'Screen width':{
       value:screen.width,
       why:'Resolution – classic fingerprint data.',
@@ -198,9 +193,7 @@ async function collectData(){
       fix:'Spoof or round the value with a privacy extension.'
     },
 
-    // -----------------------------------------------------------------
-    // Hardware hints
-    // -----------------------------------------------------------------
+    // ---- Hardware hints -------------------------------------------------
     'CPU cores (hardwareConcurrency)':{
       value:navigator.hardwareConcurrency,
       why:'Number of logical CPU cores – reveals device class.',
@@ -212,9 +205,7 @@ async function collectData(){
       fix:'Hide or report a generic value via extensions or use a browser that omits it.'
     },
 
-    // -----------------------------------------------------------------
-    // Time / locale
-    // -----------------------------------------------------------------
+    // ---- Time / locale --------------------------------------------------
     'Timezone offset (minutes)':{
       value:now.getTimezoneOffset(),
       why:'Local UTC offset – can combine with IP to locate the user.',
@@ -231,18 +222,14 @@ async function collectData(){
       fix:'Force UTC or use a privacy extension that masks the value.'
     },
 
-    // -----------------------------------------------------------------
-    // Network / IP
-    // -----------------------------------------------------------------
+    // ---- Network / IP ---------------------------------------------------
     'Public IP address':{
       value:await getPublicIP(),
       why:'Strongest identifier – reveals ISP, rough location, and can tie to other accounts.',
       fix:'Browse through a reputable VPN, Tor, or proxy. Enable IPv6 privacy extensions on the OS.'
     },
 
-    // -----------------------------------------------------------------
-    // GPU / graphics
-    // -----------------------------------------------------------------
+    // ---- GPU / graphics -------------------------------------------------
     'WebGL fingerprint':{
       value:getWebGL(),
       why:'GPU vendor & renderer strings are often unique per device – highly distinguishing.',
@@ -254,53 +241,61 @@ async function collectData(){
       fix:'Use a canvas‑blocking or spoofing extension, or enable “canvas fingerprint protection” in privacy‑focused browsers.'
     },
 
-    // -----------------------------------------------------------------
-    // Battery (HTTPS only)
-    // -----------------------------------------------------------------
+    // ---- Battery (HTTPS only) -------------------------------------------
     Battery:{
-      value:null,      // filled later if API exists
+      value:null,
       why:'Battery level & charging state can act as a slowly‑changing fingerprint.',
       fix:'Most browsers hide this on insecure origins. You can also disable the Battery API in settings or via extensions.'
     },
 
-    // -----------------------------------------------------------------
-    // Touch & input
-    // -----------------------------------------------------------------
+    // ---- Persistent storage ----------------------------------------------
+    'Persistent storage granted?':{
+      value:null,
+      why:'If the site has persistent storage it can keep data forever, a stronger fingerprinting signal.',
+      fix:'You can revoke persistent permission in browser settings or use a privacy extension that blocks it.'
+    },
+
+    // ---- Touch & input -------------------------------------------------
     'Touch points':{
       value:navigator.maxTouchPoints || 0,
       why:'Presence of a touchscreen – helps differentiate mobile vs. desktop.',
       fix:'Usually low risk; if you wish, spoof the value with a privacy extension.'
     },
 
-    // -----------------------------------------------------------------
-    // Media devices
-    // -----------------------------------------------------------------
+    // ---- Media devices -------------------------------------------------
     'Media devices (cameras, microphones, speakers)':{
       value:null,
       why:'List of available input/output devices (labels hidden until permission is granted). Reveals hardware capability.',
       fix:'Block `navigator.mediaDevices.enumerateDevices` via a privacy extension or simply deny permission prompts.'
     },
 
-    // -----------------------------------------------------------------
-    // NetworkInfo (if available)
-    // -----------------------------------------------------------------
+    // ---- NetworkInfo (if available) ------------------------------------
     'Network effective type':{
       value:navigator.connection?.effectiveType ?? 'unavailable',
       why:'Shows if the connection is “4g”, “3g”, etc.; can hint at device type or location.',
       fix:'Use a privacy extension that masks or randomises the Network Information API.'
     },
+    'Network downlink (Mbps)':{
+      value:navigator.connection?.downlink ?? 'unavailable',
+      why:'Approximate bandwidth – another subtle fingerprint.',
+      fix:'Same as above – mask or randomise the values if you care about fingerprinting.'
+    },
+    'Network round‑trip time (ms)':{
+      value:navigator.connection?.rtt ?? 'unavailable',
+      why:'Measures latency; combined with other data it can improve a fingerprint.',
+      fix:'Masking works the same way as the other NetworkInfo fields.'
+    },
 
-    // -----------------------------------------------------------------
-    // Storage estimate (if available)
-    // -----------------------------------------------------------------
+    // ---- Storage estimate -----------------------------------------------
     'Storage estimate (used / quota in GB)':{
-      value:'pending',   // will be replaced later
+      value:'pending',
       why:'Provides an idea of how much local storage you have; can be used for fingerprinting.',
       fix:'Most browsers do not expose exact numbers to third‑party sites without permission. If they do, you can use a privacy extension to hide or fuzz the values.'
     }
   };
 
-  // ----- Battery API (optional) -----
+  /* ----- Optional async pieces --------------------------------------- */
+  // Battery API
   if (navigator.getBattery){
     try{
       const bat = await navigator.getBattery();
@@ -310,7 +305,17 @@ async function collectData(){
     }
   }
 
-  // ----- Media devices (optional) -----
+  // Persistent storage status
+  if (navigator.storage && typeof navigator.storage.persisted === 'function'){
+    try{
+      const pers = await navigator.storage.persisted();
+      out['Persistent storage granted?'].value = pers ? 'yes' : 'no';
+    }catch{
+      out['Persistent storage granted?'].value = 'error';
+    }
+  }
+
+  // Media devices
   if (navigator.mediaDevices?.enumerateDevices){
     try{
       const devs = await navigator.mediaDevices.enumerateDevices();
@@ -321,13 +326,14 @@ async function collectData(){
     }
   }
 
-  // ----- Storage estimate (optional) -----
+  // Storage estimate
   if (navigator.storage?.estimate){
     try{
       const est = await navigator.storage.estimate();
-      const used = (est.usage ?? 0) / (1024**3);
-      const quota = (est.quota ?? 0) / (1024**3);
-      out['Storage estimate (used / quota in GB)'].value = `${used.toFixed(2)} GB / ${quota.toFixed(2)} GB`;
+      const used  = (est.usage  ?? 0) / (1024**3);
+      const quota = (est.quota  ?? 0) / (1024**3);
+      out['Storage estimate (used / quota in GB)'].value =
+        `${used.toFixed(2)} GB / ${quota.toFixed(2)} GB`;
     }catch{
       out['Storage estimate (used / quota in GB)'].value = 'unavailable';
     }
@@ -336,12 +342,10 @@ async function collectData(){
   return out;
 }
 
-/* -------------------------------------------------------------
-   Render the collected data into the table
-   ------------------------------------------------------------- */
+/* ---------- Rendering ------------------------------------------------- */
 async function renderTable(){
   const tbody = document.querySelector('#infoTable tbody');
-  const data = await collectData();
+  const data  = await collectData();
 
   for (const [name,info] of Object.entries(data)){
     const tr = document.createElement('tr');
@@ -351,7 +355,7 @@ async function renderTable(){
     tr.appendChild(tdName);
 
     const tdVal = document.createElement('td');
-    tdVal.textContent = info.value;
+    tdVal.textContent = info.value ?? 'N/A';
     tr.appendChild(tdVal);
 
     const tdWhy = document.createElement('td');
@@ -366,9 +370,7 @@ async function renderTable(){
   }
 }
 
-/* -------------------------------------------------------------
-   Initialise when the page is ready
-   ------------------------------------------------------------- */
+/* ---------- Start when the DOM is ready ------------------------------ */
 if (document.readyState === 'loading'){
   document.addEventListener('DOMContentLoaded',renderTable);
 }else{
