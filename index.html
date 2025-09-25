@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>What a website can see about you</title>
 
-<!-- Tiny 1×1 transparent favicon – removes the 404 warning -->
+<!-- Tiny transparent favicon to avoid 404 -->
 <link rel="icon"
       href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/5+BAQAE/wMn2TLrJQAAAABJRU5ErkJggg==">
 
@@ -77,17 +77,19 @@
 
 <p class="credit">
   Created by <strong>Animesh</strong>. 
-  <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener">Apache License 2.0</a>.
+  <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener">
+    Apache License 2.0
+  </a>.
 </p>
 
 <script>
 /* -------------------------------------------------------------
    Tiny status helper
    ------------------------------------------------------------- */
-function setStatus(text, isError = false) {
+function setStatus(txt, error = false) {
   const el = document.getElementById('status');
-  el.textContent = text;
-  el.style.color = isError ? '#c00' : '#080';
+  el.textContent = txt;
+  el.style.color = error ? '#c00' : '#080';
 }
 
 /* -------------------------------------------------------------
@@ -103,7 +105,8 @@ async function fetchPublicIP() {
       const r = await fetch(url, {cache: 'no-store'});
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       if (url.includes('json')) {
-        const {ip} = await r.json(); return ip;
+        const {ip} = await r.json();
+        return ip;
       }
       return (await r.text()).trim();
     } catch (e) {
@@ -153,7 +156,7 @@ function getCanvasHash() {
 }
 
 /* -------------------------------------------------------------
-   Main collector – returns an object with value/why/fix for each field
+   Main collector – returns an object {value, why, fix}
    ------------------------------------------------------------- */
 async function collectInfo() {
   const now = new Date();
@@ -165,13 +168,22 @@ async function collectInfo() {
       why: 'Exact browser, version and OS – lets a site serve targeted exploits.',
       fix: 'Keep the browser updated; use a privacy‑focused browser or an extension that spoofs/truncates the UA string.'
     },
+
+    // ----- Fixed User‑Agent Client Hints -----
     'User‑Agent Client Hints': {
-      value: (navigator.userAgentData && navigator.userAgentData.brands)
-        ? navigator.userAgentData.brands.map(b => `${b.brandb.version}`).join(', ')
-        : 'not supported',
+      value: (() => {
+        if (navigator.userAgentData && Array.isArray(navigator.userAgentData.brands)) {
+          // Some browsers only give a brand without a version – guard against that.
+          return navigator.userAgentData.brands
+            .map(b => b.version ? `${b.brand} ${b.version}` : b.brand)
+            .join(', ');
+        }
+        return 'not supported';
+      })(),
       why: 'Structured UA data that can be combined for fingerprinting.',
       fix: 'Prefer browsers that hide or randomise client‑hint values (Tor, Brave with strict settings).'
     },
+
     Platform: {
       value: navigator.platform,
       why: 'Operating‑system fingerprint (Win32, MacIntel, Linux…).',
@@ -227,7 +239,7 @@ async function collectInfo() {
 
     // ---------- Hardware hints ----------
     'CPU cores (hardwareConcurrency)': {
-      value: navigator.hardwareConcurrency,   // <-- fixed colon
+      value: navigator.hardwareConcurrency,          // <-- colon fixed
       why: 'Number of logical CPU cores – reveals device class.',
       fix: 'Some extensions let you report a lower value (e.g., 2 cores).'
     },
@@ -275,7 +287,7 @@ async function collectInfo() {
 
     // ---------- Battery (HTTPS only) ----------
     Battery: {
-      value: null,   // will be filled later if the API exists
+      value: null,   // filled later if API exists
       why: 'Battery level & charging state can act as a slowly‑changing fingerprint.',
       fix: 'Most browsers hide this on insecure origins. You can also disable the Battery API in settings or via extensions.'
     },
@@ -365,7 +377,7 @@ async function collectInfo() {
       const used  = (est.usage  ?? 0) / (1024 ** 3);
       const quota = (est.quota  ?? 0) / (1024 ** 3);
       out['Storage estimate (used / quota in GB)'].value =
-        `${used.toFixed(2)} GB / ${quota.toFixed(2)} GB`;
+        `${used.toFixed(2)} GB / ${quota.toFixed()} GB`;
     } catch {
       out['Storage estimate (used / quota in GB)'].value = 'unavailable';
     }
@@ -375,11 +387,11 @@ async function collectInfo() {
 }
 
 /* -------------------------------------------------------------
-   Rendering ---------------------------------------------------
+   Render the table
    ------------------------------------------------------------- */
 async function renderTable() {
   const tbody = document.querySelector('#infoTable tbody');
-  tbody.innerHTML = '';                     // clear previous run
+  tbody.innerHTML = '';
   setStatus('collecting…', false);
 
   try {
@@ -414,12 +426,12 @@ async function renderTable() {
 }
 
 /* -------------------------------------------------------------
-   Hook up the button – pointerdown works for mouse & touch
+   Button handler – works for mouse, touch, pen (pointerdown)
    ------------------------------------------------------------- */
 document.getElementById('revealBtn')
         .addEventListener('pointerdown', () => {
-  // Prevent double‑tap building multiple tables
-  if (document.querySelector('#infoTable tbody').children.length === 0) {
+  // Prevent building multiple tables if the user taps repeatedly
+  if (!document.querySelector('#infoTable tbody').hasChildNodes()) {
     renderTable();
   }
 });
