@@ -1,77 +1,317 @@
-<table style="font-size:10px; line-height:1.2; width:100%; border-collapse:collapse;">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>What a website can see about you</title>
+
+<!-- Tiny 1×1 transparent favicon – removes the 404 warning -->
+<link rel="icon"
+      href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/5+BAQAE/wMn2TLrJQAAAABJRU5ErkJggg==">
+
+<style>
+  body{
+    font-family:system-ui,Arial,sans-serif;
+    margin:40px auto 20px auto;        /* start a bit below the top */
+    max-width:960px;
+    line-height:1.5;
+    font-size:14px;                    /* larger, easy‑to‑read */
+    color:#222;
+  }
+  h1{
+    font-size:1.8rem;
+    margin-bottom:0.5rem;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    table-layout:fixed;
+  }
+  th, td{
+    border:1px solid #ccc;
+    padding:6px 8px;
+    vertical-align:top;
+    word-wrap:break-word;
+  }
+  th{
+    background:#f9f9f9;
+    font-family:cursive;               /* cursive heading */
+    font-weight:bold;                  /* bold‑cursive */
+  }
+  .credit{
+    margin-top:1.5rem;
+    font-size:0.85rem;
+    color:#555;
+    text-align:center;
+  }
+</style>
+</head>
+
+<body>
+
+<h1>🔎 What a website can see about you</h1>
+
+<table id="infoTable">
   <thead>
-    <tr style="background:#f2f2f2;">
-      <th style="border:1px solid #ddd; padding:4px;">Exposed information</th>
-      <th style="border:1px solid #ddd; padding:4px;">What it means</th>
-      <th style="border:1px solid #ddd; padding:4px;">How to protect yourself</th>
+    <tr>
+      <th>Exposed information</th>
+      <th>Current value</th>
+      <th>What it means</th>
+      <th>Tips to mitigate</th>
     </tr>
   </thead>
-  <tbody>
-    <tr>
-      <td style="border:1px solid #ddd; padding:4px;">User‑Agent / Platform</td>
-      <td style="border:1px solid #ddd; padding:4px;">Browser name, version, OS – lets a site serve exploits for that exact combination.</td>
-      <td style="border:1px solid #ddd; padding:4px;">Keep browsers/OS up‑to‑date. Use privacy‑focused browsers (Firefox, Brave) or extensions that spoof/shorten the UA string.</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #ddd; padding:4px;">Language(s)</td>
-      <td style="border:1px solid #ddd; padding:4px;">Preferred UI language(s). Helps infer location or ethnicity when combined with IP.</td>
-      <td style="border:1px solid #ddd; padding:4px;">Set a generic language (e.g., “en‑US”) or use an extension that randomises language headers.</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #ddd; padding:4px;">Cookies enabled / Do‑Not‑Track</td>
-      <td style="border:1px solid #ddd; padding:4px;">Shows whether third‑party cookies work; DNT flag signals you don’t want tracking.</td>
-      <td style="border:1px solid #ddd; padding:4px;">Block third‑party cookies in browser settings; enable Do‑Not‑Track and add a tracker‑blocking extension.</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #ddd; padding:4px;">Screen size, colour depth, pixel depth, device‑pixel‑ratio</td>
-      <td style="border:1px solid #ddd; padding:4px;">Resolution & display characteristics – classic “screen‑fingerprint”.</td>
-      <td style="border:1px solid #ddd; padding:4px;">Use a privacy‑oriented browser or extension that reports a common resolution (e.g., 1024 × 768) and rounds DPR.</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #ddd; padding:4px;">Hardware concurrency (CPU cores)</td>
-      <td style="border:1px solid #ddd; padding:4px;">Number of logical CPU cores – narrows device class (mobile vs. desktop).</td>
-      <td style="border:1px solid #ddd; padding:4px;">Some extensions let you spoof a lower core count (e.g., report 2 cores).</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #ddd; padding:4px;">Device memory (RAM) *</td>
-      <td style="border:1px solid #ddd; padding:4px;">Approximate RAM in GB – further refines fingerprint.</td>
-      <td style="border:1px solid #ddd; padding:4px;">Hide the value via privacy extensions or use a browser that omits it.</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #ddd; padding:4px;">Timezone offset</td>
-      <td style="border:1px solid #ddd; padding:4px;">Local UTC offset – can be combined with IP to locate you.</td>
-      <td style="border:1px solid #ddd; padding:4px;">Force UTC (offset = 0) with a privacy extension or use a VPN that also adjusts your system clock.</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #ddd; padding:4px;">Locale‑aware date/time strings</td>
-      <td style="border:1px solid #ddd; padding:4px;">Formatted strings reveal regional settings (e.g., month names).</td>
-      <td style="border:1px solid #ddd; padding:4px;">Set a generic locale or use an extension that rewrites `Intl` objects.</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #ddd; padding:4px;">Public IP address</td>
-      <td style="border:1px solid #ddd; padding:4px;">Your outward‑facing IP – the strongest identifier, reveals ISP & rough location.</td>
-      <td style="border:1px solid #ddd; padding:4px;">Browse through a reputable VPN, Tor, or proxy. Enable IPv6 privacy extensions on your OS.</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #ddd; padding:4px;">WebGL fingerprint (GPU vendor/renderer)</td>
-      <td style="border:1px solid #ddd; padding:4px;">GPU model & driver details – often unique per device.</td>
-      <td style="border:1px solid #ddd; padding:4px;">Block or spoof WebGL via extensions (CanvasBlocker, Trace) or disable WebGL in browser flags.</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #ddd; padding:4px;">Battery status *</td>
-      <td style="border:1px solid #ddd; padding:4px;">Charging state & level – can act as a slowly‑changing fingerprint.</td>
-      <td style="border:1px solid #ddd; padding:4px;">Most browsers hide this on insecure origins; you can also disable the Battery API in settings or via extensions.</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #ddd; padding:4px;">Touch‑point count</td>
-      <td style="border:1px solid #ddd; padding:4px;">Indicates presence of a touchscreen – helps differentiate mobile vs. desktop.</td>
-      <td style="border:1px solid #ddd; padding:4px;">Usually low‑risk; if desired, spoof the value with a privacy extension.</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid #ddd; padding:4px;">Media devices (cameras, microphones, speakers)</td>
-      <td style="border:1px solid #ddd; padding:4px;">List of available input/output devices (labels are empty until permission is granted). Reveals hardware capability.</td>
-      <td style="border:1px solid #ddd; padding:4px;">Block `navigator.mediaDevices.enumerateDevices` via a privacy extension or simply deny permission prompts.</td>
-    </tr>
-  </tbody>
+  <tbody></tbody>
 </table>
-<p style="font-size:9px; color:#555; margin-top:4px;">* Only exposed on secure (HTTPS) pages and when the browser permits the API.</p>
+
+<p class="credit">Created by <strong>Animesh. Apache License 2.0.</strong></p>
+
+<script>
+/* -------------------------------------------------------------
+   Helper – fetch public IP (primary + fallback)
+   ------------------------------------------------------------- */
+async function getPublicIP(){
+  const services = [
+    'https://api.ipify.org?format=json',
+    'https://ifconfig.me/ip'               // plain‑text fallback
+  ];
+  for (const url of services){
+    try{
+      const r = await fetch(url,{cache:'no-store'});
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      if (url.includes('json')){
+        const {ip}= await r.json(); return ip;
+      }
+      return (await r.text()).trim();
+    }catch(e){
+      console.warn('IP fetch fail',url,e);
+    }
+  }
+  return 'unavailable';
+}
+
+/* -------------------------------------------------------------
+   Helper – tiny WebGL fingerprint
+   ------------------------------------------------------------- */
+function getWebGL(){
+  try{
+    const c=document.createElement('canvas');
+    const gl=c.getContext('webgl')||c.getContext('experimental-webgl');
+    if (!gl) return 'no WebGL';
+    const ext=gl.getExtension('WEBGL_debug_renderer_info');
+    const vendor=gl.getParameter(ext?.UNMASKED_VENDOR_WEBGL)||'unknown';
+    const renderer=gl.getParameter(ext?.UNMASKED_RENDERER_WEBGL)||'unknown';
+    return `${vendor} / ${renderer}`;
+  }catch(e){
+    return `error (${e.message})`;
+  }
+}
+
+/* -------------------------------------------------------------
+   Gather all data we can read without permissions
+   ------------------------------------------------------------- */
+async function collectData(){
+  const now = new Date();
+
+  const result = {
+    // ---------------------------------------------------------
+    // 1️⃣ Browser basics
+    // ---------------------------------------------------------
+    'User‑Agent': {
+      value: navigator.userAgent,
+      why: 'Identifies browser, version and OS – enables targeted exploits.',
+      fix: 'Keep the browser up‑to‑date. Use a privacy‑focused browser or an extension that spoofs/truncates the UA string.'
+    },
+    Platform: {
+      value: navigator.platform,
+      why: 'Shows the underlying OS platform. Adds extra fingerprint entropy.',
+      fix: 'Same as User‑Agent – keep OS patched and consider extensions that hide or randomise the value.'
+    },
+    Language: {
+      value: navigator.language,
+      why: 'Preferred UI language. Combined with IP it can hint at location/ethnicity.',
+      fix: 'Set a generic language (e.g., “en‑US”) or use a privacy extension that randomises language headers.'
+    },
+    'Languages (list)': {
+      value: navigator.languages.join(', '),
+      why: 'Array of language preferences – same privacy impact as the single language field.',
+      fix: 'Same as Language.'
+    },
+    'Cookies enabled': {
+      value: navigator.cookieEnabled,
+      why: 'Tells a site whether third‑party cookies are allowed – trackers use this to decide whether to drop persistent IDs.',
+      fix: 'Block third‑party cookies in the browser settings; add a tracker‑blocking extension.'
+    },
+    'Do‑Not‑Track': {
+      value: navigator.doNotTrack,
+      why: 'Signals “I don’t want to be tracked”. Most sites ignore it, but it’s a useful flag.',
+      fix: 'Enable Do‑Not‑Track and use an extension that actively blocks known trackers.'
+    },
+
+    // ---------------------------------------------------------
+    // 2️⃣ Screen / display
+    // ---------------------------------------------------------
+    'Screen width': {
+      value: screen.width,
+      why: 'Screen resolution – classic fingerprint data that narrows the device pool.',
+      fix: 'Use a privacy‑oriented browser or extension that reports a common resolution (e.g., 1024 × 768).'
+    },
+    'Screen height': {
+      value: screen.height,
+      why: 'Same fingerprint relevance as width.',
+      fix: 'Same as Screen width.'
+    },
+    'Color depth': {
+      value: screen.colorDepth,
+      why: 'Usually 24‑ or 30‑bit colour depth – a small extra identifier.',
+      fix: 'Usually not critical; you can spoof it with privacy extensions if you like.'
+    },
+    'Pixel depth': {
+      value: screen.pixelDepth,
+      why: 'Same as colour depth.',
+      fix: 'Same as Colour depth.'
+    },
+    'Device‑pixel‑ratio': {
+      value: window.devicePixelRatio,
+      why: 'Differentiates high‑DPI displays (phones, retina monitors) from low‑DPI screens.',
+      fix: 'Spoof or round the value with a privacy extension.'
+    },
+
+    // ---------------------------------------------------------
+    // 3️⃣ Hardware hints
+    // ---------------------------------------------------------
+    'CPU cores (hardwareConcurrency)': {
+      value: navigator.hardwareConcurrency,
+      why: 'Number of logical CPU cores – reveals device class (mobile vs. desktop).',
+      fix: 'Some extensions let you report a lower value (e.g., 2 cores).'
+    },
+    'Device memory (GB)': {
+      value: navigator.deviceMemory ?? 'unavailable',
+      why: 'Approximate RAM size – further refines fingerprint.',
+      fix: 'Hide or report a generic value via extensions or use a browser that omits it.'
+    },
+
+    // ---------------------------------------------------------
+    // 4️⃣ Timezone / locale
+    // ---------------------------------------------------------
+    'Timezone offset (minutes)': {
+      value: now.getTimezoneOffset(),
+      why: 'Local UTC offset – can be combined with IP to pinpoint a region.',
+      fix: 'Force UTC (offset = 0) with a privacy extension or use a VPN that also adjusts your system clock.'
+    },
+    'Locale‑aware date string': {
+      value: now.toLocaleString(),
+      why: 'Formatted date/time strings leak regional settings, strengthening fingerprinting.',
+      fix: "Set a generic locale or use an extension that rewrites 'Intl' objects."
+    },
+
+    // ---------------------------------------------------------
+    // 5️⃣ Public IP
+    // ---------------------------------------------------------
+    'Public IP address': {
+      value: await getPublicIP(),
+      why: 'The strongest identifier – reveals ISP, approximate location and can be linked to other accounts.',
+      fix: 'Browse through a reputable VPN, Tor or proxy. Enable IPv6 privacy extensions on your OS.'
+    },
+
+    // ---------------------------------------------------------
+    // 6️⃣ GPU (WebGL)
+    // ---------------------------------------------------------
+    'WebGL fingerprint': {
+      value: getWebGL(),
+      why: 'GPU vendor & renderer strings are often unique per device – the most distinguishing fingerprint element.',
+      fix: 'Block or spoof WebGL via extensions (CanvasBlocker, Trace) or disable WebGL in browser flags.'
+    },
+
+    // ---------------------------------------------------------
+    // 7️⃣ Battery (only on HTTPS)
+    // ---------------------------------------------------------
+    Battery: {
+      value: null,   // will be filled later if API exists
+      why: 'Battery level & charging state can be used as a slowly‑changing fingerprint.',
+      fix: 'Most browsers hide this on insecure origins; you can also disable the Battery API in settings or via extensions.'
+    },
+
+    // ---------------------------------------------------------
+    // 8️⃣ Touch support
+    // ---------------------------------------------------------
+    'Touch points': {
+      value: navigator.maxTouchPoints || 0,
+      why: 'Indicates presence of a touchscreen – helps differentiate mobile from desktop.',
+      fix: 'Usually low risk; if desired, spoof the value with a privacy extension.'
+    },
+
+    // ---------------------------------------------------------
+    // 9️⃣ Media devices (cameras, mic, speakers)
+    // ---------------------------------------------------------
+    'Media devices': {
+      value: null,   // will be filled later if API exists
+      why: 'List of available input/output devices (labels are empty until permission is granted). Reveals hardware capability.',
+      fix: 'Block navigator.mediaDevices.enumerateDevices via a privacy extension or simply deny permission prompts.'
+    }
+  };
+
+  // ----- Battery API (optional) -----
+  if (navigator.getBattery){
+    try{
+      const bat = await navigator.getBattery();
+      result.Battery.value = `charging:${bat.charging} level:${bat.level}`;
+    }catch{
+      result.Battery.value = 'unavailable';
+    }
+  }
+
+  // ----- Media devices (optional) -----
+  if (navigator.mediaDevices?.enumerateDevices){
+    try{
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const list = devices.map(d=>`${d.kind}`).join(', ');
+      result['Media devices'].value = list || 'none';
+    }catch{
+      result['Media devices'].value = 'unavailable';
+    }
+  }
+
+  return result;
+}
+
+/* -------------------------------------------------------------
+   Render the collected data into the table
+   ------------------------------------------------------------- */
+async function renderTable(){
+  const tbody = document.querySelector('#infoTable tbody');
+  const data   = await collectData();
+
+  for (const [name,info] of Object.entries(data)){
+    const tr = document.createElement('tr');
+
+    const tdName = document.createElement('td');
+    tdName.textContent = name;
+    tr.appendChild(tdName);
+
+    const tdVal = document.createElement('td');
+    tdVal.textContent = info.value;
+    tr.appendChild(tdVal);
+
+    const tdWhy = document.createElement('td');
+    tdWhy.textContent = info.why;
+    tr.appendChild(tdWhy);
+
+    const tdFix = document.createElement('td');
+    tdFix.textContent = info.fix;
+    tr.appendChild(tdFix);
+
+    tbody.appendChild(tr);
+  }
+}
+
+/* -------------------------------------------------------------
+   Kick‑off when the page is ready
+   ------------------------------------------------------------- */
+if (document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', renderTable);
+}else{
+  renderTable();
+}
+</script>
+
+</body>
+</html>
