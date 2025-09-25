@@ -2,14 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>What a site can see about you → Risks & Fixes</title>
+<title>What a website can see about you – Risks & Fixes</title>
+
+<!-- tiny 1×1 transparent favicon so the 404 goes away -->
+<link rel="icon" href="data:image/png;base64,
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8
+/5+BAQAE/wMn2TLrJQAAAABJRU5ErkJggg==">
+
 <style>
-  body {font-family: system-ui, sans-serif; max-width: 900px; margin:2rem auto; line-height:1.6;}
+  body {font-family:system-ui,Arial,sans-serif; max-width:900px; margin:2rem auto; line-height:1.6;}
   button {font-size:1.1rem;padding:0.6rem 1.2rem;cursor:pointer;}
   pre  {background:#f4f4f4;padding:1rem;overflow:auto;border-radius:4px;}
   .risk {margin-top:1rem;background:#fff8e1;padding:1rem;border-left:4px solid #ff9800;}
   .risk h3 {margin-top:0;}
   .risk ul {margin:0.5rem 0 0 1.2rem;}
+  #status {margin-left:0.8rem;color:#c00;}
 </style>
 </head>
 <body>
@@ -17,15 +24,10 @@
 <h1>🔎 What a website can see about you (and why it matters)</h1>
 
 <p>
-  Click the button below. The page will gather **only the data a website can read without asking for permission** and then show you:
+  Click the button below. The page will collect **only the data a site can read without permission**, show you the raw JSON, and explain the privacy risks.
 </p>
-<ol>
-  <li>The raw values (JSON).</li>
-  <li>For each value, a short description of the privacy risk.</li>
-  <li>Practical steps you can take to reduce or hide that data.</li>
-</ol>
 
-<button id="revealBtn">Show my public info</button>
+<button id="revealBtn">Show my public info</button><span id="status"></span>
 
 <h2>Collected data</h2>
 <pre id="output">– click the button to see info –</pre>
@@ -33,28 +35,47 @@
 <div id="riskContainer"></div>
 
 <script>
-// ---------------------------------------------------------------
-// Helper – fetch public IP (free, CORS‑enabled service)
-// ---------------------------------------------------------------
-async function getPublicIP() {
-  try {
-    const r = await fetch('https://api.ipify.org?format=json');
-    if (!r.ok) throw new Error('Network error');
-    const {ip} = await r.json();
-    return ip;
-  } catch (e) {
-    return `Error: ${e.message}`;
-  }
+/* -------------------------------------------------------------
+   Helper – shows a short status message (working / error / done)
+   ------------------------------------------------------------- */
+function setStatus(msg, isError = false) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.style.color = isError ? '#c00' : '#080';
 }
 
-// ---------------------------------------------------------------
-// Helper – WebGL fingerprint (vendor & renderer)
-// ---------------------------------------------------------------
+/* -------------------------------------------------------------
+   Helper – get public IP, trying two services in case one fails
+   ------------------------------------------------------------- */
+async function fetchPublicIP() {
+  const services = [
+    'https://api.ipify.org?format=json',   // JSON response
+    'https://ifconfig.me/ip'               // plain‑text fallback
+  ];
+  for (const url of services) {
+    try {
+      const resp = await fetch(url, {cache:'no-store'});
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      if (url.includes('json')) {
+        const {ip} = await resp.json();
+        return ip;
+      }
+      return (await resp.text()).trim();  // plain‑text service
+    } catch (e) {
+      console.warn(`IP fetch failed from ${url}: ${e.message}`);
+    }
+  }
+  return 'unavailable';
+}
+
+/* -------------------------------------------------------------
+   Helper – tiny WebGL fingerprint (vendor + renderer)
+   ------------------------------------------------------------- */
 function getWebGLFingerprint() {
   try {
-    const c = document.createElement('canvas');
-    const gl = c.getContext('webgl') || c.getContext('experimental-webgl');
-    if (!gl) return 'no WebGL support';
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) return 'no WebGL';
     const dbg = gl.getExtension('WEBGL_debug_renderer_info');
     const vendor = gl.getParameter(dbg?.UNMASKED_VENDOR_WEBGL) || 'unknown';
     const renderer = gl.getParameter(dbg?.UNMASKED_RENDERER_WEBGL) || 'unknown';
@@ -64,15 +85,14 @@ function getWebGLFingerprint() {
   }
 }
 
-// ---------------------------------------------------------------
-// Main collector – returns both data and a risk‑assessment object
-// ---------------------------------------------------------------
+/* -------------------------------------------------------------
+   Main collector – returns {data, risk}
+   ------------------------------------------------------------- */
 async function collectInfo() {
   const now = new Date();
 
-  // ------- raw data -------------------------------------------------
   const data = {
-    // 1️⃣ Browser basics
+    // Browser basics
     userAgent: navigator.userAgent,
     platform: navigator.platform,
     language: navigator.language,
@@ -80,38 +100,38 @@ async function collectInfo() {
     cookieEnabled: navigator.cookieEnabled,
     doNotTrack: navigator.doNotTrack,
 
-    // 2️⃣ Screen & display
+    // Screen / display
     screenWidth: screen.width,
     screenHeight: screen.height,
     colorDepth: screen.colorDepth,
     pixelDepth: screen.pixelDepth,
     devicePixelRatio: window.devicePixelRatio,
 
-    // 3️⃣ Hardware hints
-    hardwareConcurrency: navigator.hardwareConcurrency, // CPU cores
-    deviceMemoryGB: navigator.deviceMemory,             // RAM (GB) – may be undefined
+    // Hardware hints
+    hardwareConcurrency: navigator.hardwareConcurrency,
+    deviceMemoryGB: navigator.deviceMemory,
 
-    // 4️⃣ Timezone / locale
+    // Timezone / locale
     timezoneOffsetMinutes: now.getTimezoneOffset(),
     localeString: now.toLocaleString(),
 
-    // 5️⃣ Battery (only over HTTPS)
+    // Battery – may be undefined on some browsers
     battery: null,
 
-    // 6️⃣ WebGL fingerprint
+    // WebGL fingerprint
     webgl: getWebGLFingerprint(),
 
-    // 7️⃣ Public IP (via external service)
-    publicIP: await getPublicIP(),
+    // Public IP (async)
+    publicIP: await fetchPublicIP(),
 
-    // 8️⃣ Touch & pointer
+    // Touch support
     maxTouchPoints: navigator.maxTouchPoints || 0,
 
-    // 9️⃣ Media devices (labels hidden until permission)
+    // Media devices (labels are empty until permission is granted)
     mediaDevices: null
   };
 
-  // ----- Battery API (optional) -----
+  // ---- Battery API (optional) ----
   if (navigator.getBattery) {
     try {
       const bat = await navigator.getBattery();
@@ -126,13 +146,13 @@ async function collectInfo() {
     }
   }
 
-  // ----- Media devices (optional) -----
+  // ---- Media devices (optional) ----
   if (navigator.mediaDevices?.enumerateDevices) {
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
       data.mediaDevices = devices.map(d => ({
         kind: d.kind,
-        label: d.label,   // often empty until the user grants permission
+        label: d.label,          // empty until the user grants permission
         deviceId: d.deviceId
       }));
     } catch (_) {
@@ -140,109 +160,127 @@ async function collectInfo() {
     }
   }
 
-  // ---------------------------------------------------------------
-  // Risk / mitigation mapping – one entry per field (or group)
-  // ---------------------------------------------------------------
+  /* ---------------------------------------------------------
+     Risk / mitigation mapping – one entry per field (or group)
+     --------------------------------------------------------- */
   const risk = {
     userAgent: {
-      description: `Identifies browser name, version, engine and OS. Used for fingerprinting and can expose known vulnerabilities in old browsers.`,
-      mitigation: `Keep your browser up‑to‑date. Use privacy‑focused browsers that can “spoof” or truncate the UA string (e.g., Firefox with “privacy.resistFingerprinting”, Brave).`
+      description: `Identifies browser name, version, engine and OS. Allows an attacker to serve exploits targeting that exact version.`,
+      mitigation: `Keep the browser up‑to‑date. Use a privacy‑focused browser or an extension that spoofs/truncates the UA string.`
     },
     platform: {
-      description: `Provides the underlying OS platform (e.g., Win32, MacIntel). Adds another fingerprinting dimension.`,
-      mitigation: `Same as above – keep OS patched, and consider using extensions that block the “platform” header or use a hardened user‑agent.`
+      description: `Shows the underlying OS platform (e.g., Win32, MacIntel). Adds extra fingerprinting entropy.`,
+      mitigation: `Same as userAgent – keep OS patched and consider extensions that hide or randomize the value.`
     },
-    language / languages: {
-      description: `Shows the preferred language(s). Can be combined with IP to infer location or ethnicity.`,
-      mitigation: `Set a generic language (e.g., “en‑US”) if you don’t need a specific locale, or use a browser extension that randomizes it.`
+    language: {
+      description: `Preferred UI language(s). Combined with IP it can hint at location or ethnicity.`,
+      mitigation: `Set a generic language (e.g., “en‑US”) or randomize via a privacy extension.`
+    },
+    languages: {
+      description: `Array of language preferences – same privacy impact as the single language field.`,
+      mitigation: `Same as language.`
     },
     cookieEnabled: {
-      description: `Indicates whether third‑party cookies are allowed – useful for trackers to decide if they can set persistent IDs.`,
-      mitigation: `Block third‑party cookies (most browsers have a setting). Use “strict” cookie policies or privacy‑enhancing extensions.`
+      description: `Tells a site whether cookies are allowed. Trackers use this to decide whether to drop persistent IDs.`,
+      mitigation: `Block third‑party cookies in the browser settings or use a tracker‑blocking extension.`
     },
     doNotTrack: {
-      description: `If set to “1”, signals that you prefer not to be tracked, but many sites simply ignore it.`,
-      mitigation: `Enable Do‑Not‑Track in the browser; additionally use a tracker‑blocking extension that actively blocks known tracking domains.`
+      description: `Signals “I do not want to be tracked”. Most sites ignore it, but it’s still a useful flag for privacy‑aware services.`,
+      mitigation: `Enable Do‑Not‑Track and use an extension that actively blocks known trackers.`
     },
-    screenWidth / screenHeight / colorDepth / devicePixelRatio: {
-      description: `Screen resolution and pixel density are the classic “screen size” fingerprint. Combined with other signals they can uniquely identify a device.`,
-      mitigation: `Use a privacy‑focused browser that reports a generic resolution (e.g., 1024×768) or enable “canvas fingerprint protection”. Some extensions (CanvasBlocker, Trace) also randomize these values.`
+    screenWidth: {
+      description: `Screen resolution – classic fingerprinting data that helps narrow the device pool.`,
+      mitigation: `Use a browser that reports a common resolution (e.g., 1024×768) or an extension that randomizes it.`
+    },
+    screenHeight: {description:`Same as screenWidth.`, mitigation:`Same as screenWidth.`},
+    colorDepth: {
+      description: `Usually 24‑ or 30‑bit colour depth – a small extra identifier.`,
+      mitigation: `Usually not critical; you can spoof it with privacy extensions if you like.`
+    },
+    pixelDepth: {description:`Same as colour depth.`, mitigation:`Same as colourDepth.`},
+    devicePixelRatio: {
+      description: `Differentiates high‑DPI displays (phones, retina monitors) from low‑DPI screens.`,
+      mitigation: `Spoof or round the value with a privacy extension.`
     },
     hardwareConcurrency: {
-      description: `Number of logical CPU cores. Helps narrow down device class (e.g., laptop vs. high‑end desktop).`,
-      mitigation: `Most browsers expose the real number; some privacy extensions let you spoof a lower value (e.g., 2 cores).`
+      description: `Number of logical CPU cores – reveals device class (mobile vs. desktop, low‑end vs. high‑end).`,
+      mitigation: `Some extensions let you report a lower value (e.g., 2 cores).`
     },
     deviceMemoryGB: {
-      description: `Amount of RAM (in GB). Adds another hardware fingerprint.`,
-      mitigation: `If your browser supports it, you can set `navigator.deviceMemory` to a falsy value via extensions, or use a browser that simply omits it.`
+      description: `Approximate RAM size – further refines the fingerprint.`,
+      mitigation: `Hide or report a generic value via extensions or use a browser that omits this field.`
     },
     timezoneOffsetMinutes: {
-      description: `Local time‑zone offset – often used to infer rough geographic location.`,
-      mitigation: `You can force the browser to report UTC (offset = 0) with extensions like “Temporal Privacy” or by using a VPN that also changes your system time zone.`
+      description: `Local timezone offset – can be combined with IP to pinpoint a region.`,
+      mitigation: `Force UTC (offset = 0) with a privacy extension or use a VPN that also changes the system timezone.`
     },
     localeString: {
-      description: `A formatted date/time string that reveals locale‑specific patterns, strengthening fingerprinting.`,
-      mitigation: `Same as language settings – keep the locale generic or use extensions that rewrite `Intl` objects.`
+      description: `Locale‑aware date/time formatting leaks regional settings, strengthening fingerprinting.`,
+      mitigation: `Set a generic locale or use an extension that rewrites `Intl` objects.`
     },
     publicIP: {
-      description: `Your **public** IP address is the single strongest identifier – it can be linked to an ISP account, location, and even a household.`,
-      mitigation: `Use a reputable VPN, Tor, or a proxy that masks your real IP. For added privacy, enable “IPv6 privacy extensions” on your OS.`
+      description: `Your public IP address – the strongest identifier. Reveals ISP, approximate location, and can be linked to other accounts.`,
+      mitigation: `Use a reputable VPN, Tor, or a proxy that masks your real IP. Enable IPv6 privacy extensions on your OS.`
     },
     webgl: {
-      description: `Vendor / renderer strings expose the graphics driver and GPU model. Often unique per device.`,
-      mitigation: `Use a WebGL‑blocking or spoofing extension (e.g., “CanvasBlocker”) or disable WebGL entirely if you don’t need it (browser flag).`
+      description: `GPU vendor & renderer strings are often unique per device – the most distinguishing fingerprint element.`,
+      mitigation: `Block or spoof WebGL with an extension like CanvasBlocker, or disable WebGL in browser flags.`
     },
     battery: {
-      description: `Battery level & charging state can give a rough estimate of device usage patterns and combine with other data to single out a device.`,
-      mitigation: `Most browsers already hide battery info on insecure origins. If you want to be extra‑careful, disable the Battery API via `about:config` (Firefox) or use a privacy extension.`
+      description: `Battery level & charging state can be used as a “soft fingerprint” that changes over time.`,
+      mitigation: `Most browsers hide this on insecure origins. You can also disable the Battery API via settings or extensions.`
     },
     maxTouchPoints: {
-      description: `Indicates if the device has a touchscreen; helps differentiate mobile vs. desktop.`,
-      mitigation: `Usually not a high‑risk field, but you can spoof it (e.g., set to 0) with privacy extensions.`
+      description: `Indicates presence of a touchscreen – helps differentiate mobile from desktop.`,
+      mitigation: `Usually low risk, but you can spoof it (set to 0) with privacy extensions if you wish.`
     },
     mediaDevices: {
-      description: `Lists cameras, microphones, and speakers. Labels are empty until permission is granted, but the mere presence of devices leaks hardware capability.`,
-      mitigation: `Block the `navigator.mediaDevices.enumerateDevices` call with an extension, or deny permission prompts.`
+      description: `Lists cameras, microphones, speakers. Even without labels, the mere presence leaks hardware capabilities.`,
+      mitigation: `Block `navigator.mediaDevices.enumerateDevices` calls with an extension, or deny permission prompts.`
     }
   };
 
   return {data, risk};
 }
 
-// ---------------------------------------------------------------
-// UI handling – prints JSON + risk explanations
-// ---------------------------------------------------------------
+/* -------------------------------------------------------------
+   UI handling – show JSON + risk list + status messages
+   ------------------------------------------------------------- */
 document.getElementById('revealBtn').addEventListener('click', async () => {
-  const out = document.getElementById('output');
+  const out   = document.getElementById('output');
   const riskDiv = document.getElementById('riskContainer');
 
-  out.textContent = 'Collecting… please wait…';
+  out.textContent   = 'Collecting… please wait…';
   riskDiv.innerHTML = '';
+  setStatus('working…');
 
-  const {data, risk} = await collectInfo();
+  try {
+    const {data, risk} = await collectInfo();
 
-  // pretty‑print raw JSON
-  out.textContent = JSON.stringify(data, null, 2);
+    // ---- raw JSON -------------------------------------------------
+    out.textContent = JSON.stringify(data, null, 2);
+    console.log('Collected data:', data);      // handy for debugging
 
-  // Build a human‑readable risk list
-  const sections = Object.entries(risk).map(([field, {description, mitigation}]) => {
-    // For grouped fields (e.g., screenWidth/screenHeight) we show the same description
-    // – the key may contain a slash, so we just display it as‑is.
-    return `
+    // ---- human‑readable risk list --------------------------------
+    const sections = Object.entries(risk).map(([field, {description, mitigation}]) => `
       <h3>${field}</h3>
       <ul>
         <li><strong>What it reveals:</strong> ${description}</li>
         <li><strong>How to mitigate:</strong> ${mitigation}</li>
-      </ul>
-    `;
-  }).join('');
+      </ul>`).join('');
 
-  riskDiv.innerHTML = `
-    <div class="risk">
-      <h2>⚠️ What these data points can be used for & how to protect yourself</h2>
-      ${sections}
-    </div>
-  `;
+    riskDiv.innerHTML = `
+      <div class="risk">
+        <h2>⚠️ Risks & Mitigations</h2>
+        ${sections}
+      </div>`;
+
+    setStatus('done');
+  } catch (err) {
+    console.error('Collection error:', err);
+    out.textContent = '❌ An error occurred – see the console for details.';
+    setStatus('error', true);
+  }
 });
 </script>
 
