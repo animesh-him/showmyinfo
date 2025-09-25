@@ -82,7 +82,7 @@
 
 <script>
 /* -------------------------------------------------------------
-   Helper – tiny status helper
+   Tiny status helper
    ------------------------------------------------------------- */
 function setStatus(text, isError = false) {
   const el = document.getElementById('status');
@@ -91,7 +91,7 @@ function setStatus(text, isError = false) {
 }
 
 /* -------------------------------------------------------------
-   Helper – fetch public IP (primary + fallback)
+   Fetch public IP (primary + fallback)
    ------------------------------------------------------------- */
 async function fetchPublicIP() {
   const services = [
@@ -114,7 +114,7 @@ async function fetchPublicIP() {
 }
 
 /* -------------------------------------------------------------
-   Helper – WebGL fingerprint (vendor / renderer)
+   WebGL fingerprint (vendor / renderer)
    ------------------------------------------------------------- */
 function getWebGL() {
   try {
@@ -131,7 +131,7 @@ function getWebGL() {
 }
 
 /* -------------------------------------------------------------
-   Helper – simple canvas hash (another fingerprint vector)
+   Simple canvas hash (another fingerprint vector)
    ------------------------------------------------------------- */
 function getCanvasHash() {
   try {
@@ -167,7 +167,7 @@ async function collectInfo() {
     },
     'User‑Agent Client Hints': {
       value: (navigator.userAgentData && navigator.userAgentData.brands)
-        ? navigator.userAgentData.brands.map(b => `${b.brand} ${b.version}`).join(', ')
+        ? navigator.userAgentData.brands.map(b => `${b.brandb.version}`).join(', ')
         : 'not supported',
       why: 'Structured UA data that can be combined for fingerprinting.',
       fix: 'Prefer browsers that hide or randomise client‑hint values (Tor, Brave with strict settings).'
@@ -227,7 +227,7 @@ async function collectInfo() {
 
     // ---------- Hardware hints ----------
     'CPU cores (hardwareConcurrency)': {
-      value navigator.hardwareConcurrency,
+      value: navigator.hardwareConcurrency,   // <-- fixed colon
       why: 'Number of logical CPU cores – reveals device class.',
       fix: 'Some extensions let you report a lower value (e.g., 2 cores).'
     },
@@ -379,7 +379,7 @@ async function collectInfo() {
    ------------------------------------------------------------- */
 async function renderTable() {
   const tbody = document.querySelector('#infoTable tbody');
-  tbody.innerHTML = '';                     // clear any previous run
+  tbody.innerHTML = '';                     // clear previous run
   setStatus('collecting…', false);
 
   try {
@@ -416,8 +416,9 @@ async function renderTable() {
 /* -------------------------------------------------------------
    Hook up the button – pointerdown works for mouse & touch
    ------------------------------------------------------------- */
-document.getElementById('revealBtn').addEventListener('pointerdown', () => {
-  // Prevent multiple rapid taps from stacking tables
+document.getElementById('revealBtn')
+        .addEventListener('pointerdown', () => {
+  // Prevent double‑tap building multiple tables
   if (document.querySelector('#infoTable tbody').children.length === 0) {
     renderTable();
   }
