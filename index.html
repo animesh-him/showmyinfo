@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>What a website can see about you – Risks & Fixes</title>
 
-<!-- tiny 1×1 transparent favicon so the 404 goes away -->
+<!-- Tiny 1×1 transparent favicon so the 404 disappears -->
 <link rel="icon" href="data:image/png;base64,
 iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8
 /5+BAQAE/wMn2TLrJQAAAABJRU5ErkJggg==">
@@ -192,12 +192,18 @@ async function collectInfo() {
       description: `Screen resolution – classic fingerprinting data that helps narrow the device pool.`,
       mitigation: `Use a browser that reports a common resolution (e.g., 1024×768) or an extension that randomizes it.`
     },
-    screenHeight: {description:`Same as screenWidth.`, mitigation:`Same as screenWidth.`},
+    screenHeight: {
+      description: `Screen height – same fingerprinting relevance as width.`,
+      mitigation: `Same as screenWidth.`
+    },
     colorDepth: {
       description: `Usually 24‑ or 30‑bit colour depth – a small extra identifier.`,
       mitigation: `Usually not critical; you can spoof it with privacy extensions if you like.`
     },
-    pixelDepth: {description:`Same as colour depth.`, mitigation:`Same as colourDepth.`},
+    pixelDepth: {
+      description: `Same as colour depth.`,
+      mitigation: `Same as colourDepth.`
+    },
     devicePixelRatio: {
       description: `Differentiates high‑DPI displays (phones, retina monitors) from low‑DPI screens.`,
       mitigation: `Spoof or round the value with a privacy extension.`
@@ -216,7 +222,7 @@ async function collectInfo() {
     },
     localeString: {
       description: `Locale‑aware date/time formatting leaks regional settings, strengthening fingerprinting.`,
-      mitigation: `Set a generic locale or use an extension that rewrites `Intl` objects.`
+      mitigation: `Set a generic locale or use an extension that rewrites 'Intl' objects.`
     },
     publicIP: {
       description: `Your public IP address – the strongest identifier. Reveals ISP, approximate location, and can be linked to other accounts.`,
@@ -236,7 +242,7 @@ async function collectInfo() {
     },
     mediaDevices: {
       description: `Lists cameras, microphones, speakers. Even without labels, the mere presence leaks hardware capabilities.`,
-      mitigation: `Block `navigator.mediaDevices.enumerateDevices` calls with an extension, or deny permission prompts.`
+      mitigation: `Block navigator.mediaDevices.enumerateDevices calls with an extension, or deny permission prompts.`
     }
   };
 
@@ -259,7 +265,7 @@ document.getElementById('revealBtn').addEventListener('click', async () => {
 
     // ---- raw JSON -------------------------------------------------
     out.textContent = JSON.stringify(data, null, 2);
-    console.log('Collected data:', data);      // handy for debugging
+    console.log('Collected data:', data); // handy for debugging
 
     // ---- human‑readable risk list --------------------------------
     const sections = Object.entries(risk).map(([field, {description, mitigation}]) => `
